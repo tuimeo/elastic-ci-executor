@@ -90,7 +90,7 @@ small-job:
   image: alpine:latest
   variables:
     CI_JOB_BUILD_CPU: "1"            # 1 vCPU
-    CI_JOB_BUILD_MEMORY: "2"        # 2 GB
+    CI_JOB_BUILD_MEMORY: "2"        # 2 GiB
   script:
     - echo "Lightweight task"
 
@@ -233,6 +233,80 @@ resource_group = "my-resource-group"
 location = "eastus"
 # subnet_id = "/subscriptions/xxx/resourceGroups/xxx/providers/Microsoft.Network/virtualNetworks/xxx/subnets/xxx"
 ```
+
+## Provider Permissions
+
+### AWS Fargate
+
+IAM permissions required:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecs:RegisterTaskDefinition",
+        "ecs:RunTask",
+        "ecs:DescribeTasks",
+        "ecs:StopTask",
+        "ecs:ExecuteCommand"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iam:PassRole"
+      ],
+      "Resource": "arn:aws:iam::*:role/ecsTaskExecutionRole"
+    }
+  ]
+}
+```
+
+**Network Requirements:**
+- Containers need internet access (for `npm install`, `apt-get`, etc.)
+- Configure NAT Gateway if using private subnets
+- Security groups must allow outbound traffic
+
+### Aliyun ECI
+
+RAM permissions required:
+
+```json
+{
+  "Version": "1",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "eci:CreateContainerGroup",
+        "eci:DescribeContainerGroups",
+        "eci:ExecContainerCommand",
+        "eci:DeleteContainerGroup",
+        "eci:DescribeImageCaches",
+        "eci:CreateImageCache",
+        "eci:DeleteImageCache"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+**Credentials** (in priority order):
+1. `access_key_id` / `access_key_secret` in config
+2. Environment variables: `ALIYUN_ACCESS_KEY_ID`, `ALIYUN_ACCESS_KEY_SECRET`
+3. Instance RAM role
+
+### Azure ACI
+
+**Authentication** (any one of):
+- Azure CLI: `az login`
+- Service Principal
+- Managed Identity
 
 ## Image Proxy
 
