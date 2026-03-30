@@ -1,0 +1,22 @@
+# Azure ACI Provider Configuration
+# Save this as config.toml (alongside the binary, or in standard search paths)
+
+provider = "azure-aci"
+
+# Container resource defaults
+# build_cpu = 2
+# build_memory = 4
+# helper_cpu = 2
+# helper_memory = 4
+# helper_image = "registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v18.9.0"
+
+# Use on-demand instances instead of spot/preemptible
+# no_spot = false
+
+[azure-aci]
+subscription_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+resource_group = "my-resource-group"
+location = "eastus"
+
+# Optional: VNet subnet integration
+# subnet_id = "/subscriptions/xxx/resourceGroups/xxx/providers/Microsoft.Network/virtualNetworks/xxx/subnets/xxx"

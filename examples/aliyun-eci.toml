@@ -1,0 +1,29 @@
+# Aliyun ECI Provider Configuration
+# Save this as config.toml (alongside the binary, or in standard search paths)
+
+provider = "aliyun-eci"
+
+# Container resource defaults
+# build_cpu = 2
+# build_memory = 4
+# helper_cpu = 2
+# helper_memory = 4
+# helper_image = "registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v18.9.0"
+
+# Use on-demand instances instead of spot/preemptible
+# no_spot = false
+
+[aliyun-eci]
+region = "cn-hangzhou"
+vpc_id = "vpc-xxxxx"
+vswitch_id = "vsw-xxxxx"
+security_group_id = "sg-xxxxx"
+
+# Credentials (optional, can use environment variables:
+#   ALIYUN_ACCESS_KEY_ID / ALIYUN_ACCESS_KEY_SECRET)
+# access_key_id = ""
+# access_key_secret = ""
+
+# Image cache (optional, defaults to true)
+# Auto-matches best image cache to accelerate container startup.
+# auto_match_image_cache = true

@@ -1,0 +1,104 @@
+# Elastic CI Executor Configuration
+# This file will be auto-discovered from:
+#   1. ./config.toml (current directory)
+#   2. /etc/elastic-ci-executor/config.toml (system-wide)
+#   3. ~/.config/elastic-ci-executor/config.toml (user-specific)
+#   4. <executable-dir>/config.toml (portable mode)
+# Or specify explicitly with: --config /path/to/config.toml
+
+# Provider to use (required)
+# Options: "aws-fargate", "aliyun-eci", "azure-aci"
+provider = "aliyun-eci"
+
+# Global settings
+# jobstore = "./jobstore"  # Job metadata directory (default: ./jobstore)
+# log_level = "info"    # Options: debug, info, warn, error
+
+# Docker image proxy (crproxy-style path routing)
+# When set, all container image references are rewritten to go through this proxy.
+# Example: with image_proxy = "proxy.example.com":
+#   "ubuntu:latest"                           → "proxy.example.com/docker.io/library/ubuntu:latest"
+#   "myuser/myimage:v1"                       → "proxy.example.com/docker.io/myuser/myimage:v1"
+#   "registry.gitlab.com/org/img:tag"         → "proxy.example.com/registry.gitlab.com/org/img:tag"
+# This applies to both the job image (from CI_JOB_IMAGE or config) and the helper image.
+# image_proxy = "proxy.example.com"
+
+# Container settings
+# image = "alpine:latest"  # Default container image (can be overridden by CI_JOB_IMAGE)
+# no_spot = false           # Use on-demand instances instead of spot/preemptible (default: false = use spot)
+# job_timeout = 60          # Max container lifetime in minutes (default: 60)
+
+# Build container resources (the container that runs your CI scripts)
+# build_cpu = 2              # CPU in vCPU cores (integer, e.g., 1, 2, 4, 8). Default: 2. Override per-job with CI_JOB_BUILD_CPU.
+# build_memory = 4           # Memory in GiB (integer, e.g., 2, 4, 8, 16). Default: 4. Override per-job with CI_JOB_BUILD_MEMORY.
+#                            # Note: Each cloud provider has specific valid CPU/memory combinations
+
+# Helper container resources (git clone, cache, artifacts)
+# helper_image = "registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v18.9.0"  # Auto-detected from CI_RUNNER_VERSION if not set
+# helper_cpu = 2              # Helper container CPU in vCPU cores (default: 2, can be overridden by CI_JOB_HELPER_CPU)
+# helper_memory = 4           # Helper container memory in GiB (default: 4, can be overridden by CI_JOB_HELPER_MEMORY)
+
+# Optional: Set environment variables for all jobs
+# [env_vars]
+# NODE_ENV = "production"
+
+# Optional: Image registry credentials for pulling from private registries
+# Multiple credentials are supported (one per registry).
+# Two forms:
+#   - Username/Password (Aliyun ECI, Azure ACI): server + username + password
+#   - AWS Secrets Manager (AWS Fargate): server + credentials_parameter (ARN)
+#     The secret must contain JSON: {"username":"...","password":"..."}
+#     Requires execution_role_arn with secretsmanager:GetSecretValue permission
+#
+# [[image_registry_credentials]]
+# server = "registry.example.com"
+# username = "myuser"
+# password = "mypassword"
+#
+# [[image_registry_credentials]]
+# server = "ghcr.io"
+# credentials_parameter = "arn:aws:secretsmanager:us-east-1:123456789012:secret:ghcr-creds"
+
+# AWS Fargate Provider Configuration
+[aws-fargate]
+region = "us-east-1"
+cluster = "my-gitlab-runner-cluster"
+task_definition_family = "gitlab-runner-task"
+subnets = ["subnet-12345678", "subnet-87654321"]
+security_groups = ["sg-12345678"]
+assign_public_ip = true
+
+# Required: IAM execution role for CloudWatch Logs and image pulls
+execution_role_arn = "arn:aws:iam::123456789012:role/ecsTaskExecutionRole"
+# Optional: IAM role for task containers
+# task_role_arn = "arn:aws:iam::123456789012:role/ecsTaskRole"
+
+
+# Aliyun ECI Provider Configuration
+[aliyun-eci]
+region = "cn-hangzhou"
+vpc_id = "vpc-xxxxx"
+vswitch_id = "vsw-xxxxx"
+security_group_id = "sg-xxxxx"
+
+# Optional: Credentials (can also be provided via environment variables ALIYUN_ACCESS_KEY_ID / ALIYUN_ACCESS_KEY_SECRET)
+# access_key_id = ""
+# access_key_secret = ""
+
+# Optional: EIP (Elastic IP) settings for public internet access
+# auto_create_eip = true       # Auto-allocate EIP per container (default: true). Required when VSwitch has no SNAT gateway.
+# eip_bandwidth = 50            # EIP bandwidth cap in Mbps when auto_create_eip is true (default: 50)
+# eip_common_bandwidth_package = "cbwp-xxxxx"  # Associate auto-created EIP with a shared bandwidth package
+# eip_instance_id = "eip-xxxxx" # Bind a pre-allocated EIP (for serial/non-concurrent jobs only)
+
+# Optional: Image cache
+# auto_match_image_cache = true  # Auto-match best image cache to accelerate container startup (default: true)
+
+# Azure ACI Provider Configuration
+[azure-aci]
+subscription_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+resource_group = "my-gitlab-runner-rg"
+location = "eastus"
+
+# Optional: Subnet ID for VNet integration
+# subnet_id = "/subscriptions/xxx/resourceGroups/xxx/providers/Microsoft.Network/virtualNetworks/xxx/subnets/xxx"

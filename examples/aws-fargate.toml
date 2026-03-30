@@ -1,0 +1,29 @@
+# AWS Fargate Provider Configuration
+# Save this as config.toml (alongside the binary, or in standard search paths)
+
+provider = "aws-fargate"
+
+# Container resource defaults
+# build_cpu = 2
+# build_memory = 4
+# helper_cpu = 2
+# helper_memory = 4
+# helper_image = "registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v18.9.0"
+
+# Use on-demand instances instead of spot/preemptible
+# no_spot = false
+
+[aws-fargate]
+region = "us-east-1"
+cluster = "my-ecs-cluster"
+subnets = ["subnet-12345678", "subnet-87654321"]
+security_groups = ["sg-12345678"]
+task_definition_family = "elastic-ci-executor"
+# assign_public_ip = true  # default; set to false for private subnets with NAT Gateway
+
+# Required: IAM execution role for CloudWatch Logs and image pulls.
+# Attach the managed policy AmazonECSTaskExecutionRolePolicy.
+execution_role_arn = "arn:aws:iam::123456789012:role/ecsTaskExecutionRole"
+
+# Optional: IAM role for task containers (allows tasks to call AWS APIs)
+# task_role_arn = "arn:aws:iam::123456789012:role/ecsTaskRole"
