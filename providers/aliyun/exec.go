@@ -159,7 +159,9 @@ func (p *ECIProvider) execShellCommand(ctx context.Context, containerGroupId, co
 	return p.streamWebSocket(ctx, *response.Body.WebSocketUri, sentinel, stdout)
 }
 
-// streamWebSocket connects to the ECI WebSocket URI and streams output
+// streamWebSocket connects to the ECI WebSocket URI and streams output.
+// It uses a long read deadline to support commands that produce no output for extended
+// periods (e.g. compilation, sleep). The overall timeout is governed by ctx.
 func (p *ECIProvider) streamWebSocket(ctx context.Context, wsURI, sentinel string, stdout io.Writer) (int, error) {
 	u, err := url.Parse(wsURI)
 	if err != nil {
@@ -184,6 +186,28 @@ func (p *ECIProvider) streamWebSocket(ctx context.Context, wsURI, sentinel strin
 
 	logger.Debug("WebSocket connected for streaming")
 
+	// Start a ping goroutine to keep the WebSocket alive.
+	// ECI's server-side idle timeout (~60s) will close connections with no traffic.
+	pingDone := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				if writeErr := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(5*time.Second)); writeErr != nil {
+					logger.Debug("WebSocket ping failed", "error", writeErr)
+					return
+				}
+			case <-pingDone:
+				return
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	defer close(pingDone)
+
 	exitCode := 1
 	foundExit := false
 	buf := &strings.Builder{}
@@ -195,7 +219,9 @@ func (p *ECIProvider) streamWebSocket(ctx context.Context, wsURI, sentinel strin
 		default:
 		}
 
-		_ = conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+		// Use a long read deadline; pings keep the connection alive against server idle timeout.
+		// The context deadline (job timeout) is the real upper bound.
+		_ = conn.SetReadDeadline(time.Now().Add(1 * time.Hour))
 
 		msgType, message, err := conn.ReadMessage()
 		if err != nil {
@@ -203,7 +229,7 @@ func (p *ECIProvider) streamWebSocket(ctx context.Context, wsURI, sentinel strin
 			case websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway):
 				logger.Debug("WebSocket closed normally")
 			case strings.Contains(err.Error(), "timeout"):
-				logger.Debug("WebSocket read timeout, checking buffer")
+				logger.Debug("WebSocket read timeout, assuming connection lost")
 			default:
 				logger.Debug("WebSocket read error", "error", err)
 			}
