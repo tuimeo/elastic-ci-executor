@@ -87,6 +87,27 @@ func (p *ACIProvider) streamWebSocket(ctx context.Context, wsURI, password, sent
 		return 1, fmt.Errorf("failed to send authentication: %w", err)
 	}
 
+	// Start a ping goroutine to keep the WebSocket alive.
+	// Azure ACI's server-side idle timeout (~5min) will close connections with no traffic.
+	pingDone := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				if writeErr := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(5*time.Second)); writeErr != nil {
+					return
+				}
+			case <-pingDone:
+				return
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	defer close(pingDone)
+
 	// Read messages until connection closes
 	exitCode := 1
 	foundExit := false
