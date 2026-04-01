@@ -46,6 +46,7 @@ func newConfigCommand() *cli.Command {
 					"version": _VERSION,
 				},
 				"builds_dir": "/builds",
+				"cache_dir":  "/cache",
 				"shell":      "sh",
 			}
 

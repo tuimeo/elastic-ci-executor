@@ -60,6 +60,7 @@ concurrent = 3
   url = "https://gitlab.com"
   token = "YOUR_RUNNER_TOKEN"
   executor = "custom"
+  environment = ["FF_USE_FASTZIP=true"]
   [runners.custom]
     config_exec  = "elastic-ci-executor"
     config_args  = ["execute", "config"]
@@ -72,6 +73,28 @@ concurrent = 3
 ```
 
 If you put `config.toml` next to the binary (e.g. `/usr/local/bin/config.toml`) or rely on another auto-discovered path, you can omit the `--config` flag entirely.
+
+### Performance Tuning
+
+**Recommended Runner environment variables** for better CI performance:
+
+```toml
+[[runners]]
+  environment = [
+    "FF_USE_FASTZIP=true",           # Parallel zip for cache archiving (significant speedup)
+  ]
+```
+
+Since elastic containers are created on-demand with configurable resources, don't hesitate to allocate generous CPU/memory — the container only lives for the duration of the job. Use per-job variables to tune resources:
+
+```yaml
+build:
+  variables:
+    CI_JOB_BUILD_CPU: "4"
+    CI_JOB_BUILD_MEMORY: "8"
+    CI_JOB_HELPER_CPU: "4"
+    CI_JOB_HELPER_MEMORY: "8"
+```
 
 ## Per-Job Configuration via .gitlab-ci.yml
 
@@ -215,6 +238,9 @@ security_group_id = "sg-xxxxx"
 # access_key_secret = ""
 # Image cache accelerates container startup (default: true)
 # auto_match_image_cache = true
+# Use memory-backed (tmpfs) EmptyDir for /builds volume (default: true)
+# Significantly faster I/O; set to false to use cloud disk
+# builds_in_memory = true
 # EIP settings for public internet access
 # auto_create_eip = true
 # eip_bandwidth = 50

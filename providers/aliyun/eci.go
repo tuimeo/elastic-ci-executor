@@ -116,6 +116,8 @@ func (p *ECIProvider) CreateContainer(ctx context.Context, settings providers.Jo
 
 	// Shared EmptyDir volume for /builds
 	volumeName := "builds"
+	// Memory-backed EmptyDir volume for /cache (helper only, always tmpfs)
+	cacheVolumeName := "cache"
 	buildsMount := []*eciclient.CreateContainerGroupRequestContainerVolumeMount{
 		{
 			Name:      &volumeName,
@@ -145,7 +147,10 @@ func (p *ECIProvider) CreateContainer(ctx context.Context, settings providers.Jo
 		Command:         cmdPtrs,
 		ImagePullPolicy: &imagePullPolicy,
 		EnvironmentVar:  envVars,
-		VolumeMount:     buildsMount,
+		VolumeMount: append(buildsMount, &eciclient.CreateContainerGroupRequestContainerVolumeMount{
+			Name:      &cacheVolumeName,
+			MountPath: strPtr("/cache"),
+		}),
 	}
 
 	// Build container: user scripts
@@ -169,6 +174,13 @@ func (p *ECIProvider) CreateContainer(ctx context.Context, settings providers.Jo
 		Container:          []*eciclient.CreateContainerGroupRequestContainer{helperContainer, buildContainer},
 		Volume: []*eciclient.CreateContainerGroupRequestVolume{
 			p.buildEmptyDirVolume(volumeName),
+			{
+				Name: &cacheVolumeName,
+				Type: strPtr("EmptyDirVolume"),
+				EmptyDirVolume: &eciclient.CreateContainerGroupRequestVolumeEmptyDirVolume{
+					Medium: strPtr("Memory"),
+				},
+			},
 		},
 	}
 
