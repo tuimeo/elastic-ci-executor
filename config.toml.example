@@ -94,6 +94,9 @@ security_group_id = "sg-xxxxx"
 # Optional: Image cache
 # auto_match_image_cache = true  # Auto-match best image cache to accelerate container startup (default: true)
 
+# Optional: /builds volume storage
+# builds_in_memory = true  # Use memory-backed (tmpfs) EmptyDir for /builds (default: true). Set to false for cloud disk.
+
 # Azure ACI Provider Configuration
 [azure-aci]
 subscription_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"

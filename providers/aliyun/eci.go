@@ -168,10 +168,7 @@ func (p *ECIProvider) CreateContainer(ctx context.Context, settings providers.Jo
 		SecurityGroupId:    &p.cfg.SecurityGroupId,
 		Container:          []*eciclient.CreateContainerGroupRequestContainer{helperContainer, buildContainer},
 		Volume: []*eciclient.CreateContainerGroupRequestVolume{
-			{
-				Name: &volumeName,
-				Type: strPtr("EmptyDirVolume"),
-			},
+			p.buildEmptyDirVolume(volumeName),
 		},
 	}
 
@@ -413,6 +410,22 @@ func permResult(action string, err error) providers.PermissionCheckResult {
 
 func (p *ECIProvider) generateContainerGroupName() string {
 	return fmt.Sprintf("elastic-ci-%d", time.Now().Unix())
+}
+
+// buildEmptyDirVolume creates the /builds EmptyDir volume.
+// Defaults to memory-backed (tmpfs); set builds_in_memory = false for cloud disk.
+func (p *ECIProvider) buildEmptyDirVolume(name string) *eciclient.CreateContainerGroupRequestVolume {
+	vol := &eciclient.CreateContainerGroupRequestVolume{
+		Name: &name,
+		Type: strPtr("EmptyDirVolume"),
+	}
+	buildsInMemory := p.cfg.BuildsInMemory == nil || *p.cfg.BuildsInMemory
+	if buildsInMemory {
+		vol.EmptyDirVolume = &eciclient.CreateContainerGroupRequestVolumeEmptyDirVolume{
+			Medium: strPtr("Memory"),
+		}
+	}
+	return vol
 }
 
 func strPtr(s string) *string { return &s }

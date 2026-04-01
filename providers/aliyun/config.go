@@ -25,6 +25,9 @@ type Config struct {
 	// AutoMatchImageCache automatically matches and uses the best image cache to accelerate container startup.
 	// Defaults to true when not set.
 	AutoMatchImageCache *bool `toml:"auto_match_image_cache"`
+	// BuildsInMemory uses memory-backed (tmpfs) EmptyDir volume for /builds instead of the default cloud disk.
+	// Significantly faster I/O but consumes container memory. Defaults to true (memory).
+	BuildsInMemory *bool `toml:"builds_in_memory"`
 }
 
 // Validate checks if the Aliyun configuration is valid
